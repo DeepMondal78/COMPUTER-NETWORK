@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "express": "^5.2.1",
+    "fast-speedtest-api": "^0.3.2",
+    "ping": "^1.0.0",
+    "socket.io": "^4.8.4"
+  }
+}

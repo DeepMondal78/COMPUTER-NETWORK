@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All-In-One Network Tool & Speed Test</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef2f7; margin: 0; padding: 20px; }
+        .container { max-width: 700px; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        h2 { color: #2c3e50; text-align: center; }
+        .section { background: #f9fbfc; border: 1px solid #dcdde1; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        h3 { margin-top: 0; color: #34495e; font-size: 18px; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { flex: 1; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #3498db; color: white; border: none; padding: 9px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        button:hover { background: #2980b9; }
+        .result-box { margin-top: 10px; background: #fff; padding: 10px; border-left: 4px solid #2ecc71; border-radius: 4px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Advanced Network Utility & Speed Tool</h2>
+
+    <!-- 1. Subnet Calculator Section -->
+    <div class="section">
+        <h3>1. IP Subnet Calculator</h3>
+        <div class="form-row">
+            <input type="text" id="ipInput" placeholder="IP Address (e.g. 192.168.1.10)" value="192.168.1.1">
+            <input type="number" id="cidrInput" placeholder="CIDR (e.g. 24)" value="24" min="0" max="32" style="max-width: 90px;">
+            <button id="calcSubnetBtn">Calculate</button>
+        </div>
+        <div id="subnetResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- 2. Ping & Latency Tester Section -->
+    <div class="section">
+        <h3>2. Host Ping & Latency Tester</h3>
+        <div class="form-row">
+            <input type="text" id="hostInput" placeholder="Host / Domain (e.g. google.com or 8.8.8.8)" value="google.com">
+            <button id="pingBtn">Test Ping</button>
+        </div>
+        <div id="pingResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- 3. Network Speed Test Section -->
+    <div class="section">
+        <h3>3. Network Speed & Bandwidth Test</h3>
+        <button id="speedBtn" style="width: 100%;">Run Speed Test</button>
+        <div id="speedResult" class="result-box" style="display:none; text-align: center; font-size: 16px; font-weight: bold; color: #27ae60;"></div>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+
+    // Subnet Calculator
+    document.getElementById('calcSubnetBtn').addEventListener('click', () => {
+        const ip = document.getElementById('ipInput').value.trim();
+        const cidr = document.getElementById('cidrInput').value.trim();
+        socket.emit('calculate-subnet', { ip, cidr });
+    });
+
+    socket.on('subnet-result', (data) => {
+        const box = document.getElementById('subnetResult');
+        box.style.display = 'block';
+        if (data.error) {
+            box.innerHTML = `<span style="color:red;">${data.error}</span>`;
+        } else {
+            box.innerHTML = `
+                <b>IP Address:</b> ${data.ip} <br>
+                <b>CIDR:</b> ${data.cidr} <br>
+                <b>Subnet Mask:</b> ${data.subnetMask} <br>
+                <b>Network ID:</b> ${data.networkId} <br>
+                <b>Broadcast Address:</b> ${data.broadcastAddress} <br>
+                <b>Total Usable Hosts:</b> ${data.totalHosts}
+            `;
+        }
+    });
+
+    // Ping Tester
+    document.getElementById('pingBtn').addEventListener('click', () => {
+        const host = document.getElementById('hostInput').value.trim();
+        if (!host) return alert('Enter host name');
+        document.getElementById('pingResult').style.display = 'block';
+        document.getElementById('pingResult').innerHTML = 'Pinging... please wait...';
+        socket.emit('start-ping', { host });
+    });
+
+    socket.on('ping-result', (data) => {
+        const box = document.getElementById('pingResult');
+        if (data.error || !data.alive) {
+            box.innerHTML = `<span style="color:red;">Host is unreachable or down.</span>`;
+        } else {
+            box.innerHTML = `Host: <b>${data.host}</b> | Status: <span style="color:green;">Alive</span> | Latency / Ping: <b>${data.time} ms</b>`;
+        }
+    });
+
+    // Speed Test
+    document.getElementById('speedBtn').addEventListener('click', () => {
+        const box = document.getElementById('speedResult');
+        box.style.display = 'block';
+        box.innerHTML = 'Testing download speed...';
+        socket.emit('start-speedtest');
+    });
+
+    socket.on('speed-result', (data) => {
+        const box = document.getElementById('speedResult');
+        box.innerHTML = `Download Speed: ${data.downloadSpeed} Mbps ${data.note ? '('+data.note+')' : ''}`;
+    });
+</script>
+
+</body>
+</html>

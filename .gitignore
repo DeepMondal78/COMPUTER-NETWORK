@@ -1,0 +1,9 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+**/ .env
+
+# Lock files if needed (optional, though package-lock can be kept)
